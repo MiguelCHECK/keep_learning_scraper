@@ -1,0 +1,72 @@
+name: Security Check
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Check for secrets in code
+      run: |
+        echo "Checking for accidentally committed secrets..."
+        
+        # Only check files that are tracked by git (not local files)
+        # This prevents false positives from local .env and credentials files
+        
+        echo "Scanning tracked files for secrets..."
+        
+        # Get tracked files, exclude .md files and this workflow
+        TRACKED_FILES=$(git ls-files | grep -v "\.md$" | grep -v "security-check.yml")
+        
+        # Check for potential credentials in tracked files
+        if [ -n "$TRACKED_FILES" ]; then
+          if echo "$TRACKED_FILES" | xargs grep -l "private_key" 2>/dev/null; then
+            echo "ERROR: Found 'private_key' in tracked files!"
+            echo "$TRACKED_FILES" | xargs grep -l "private_key" 2>/dev/null
+            exit 1
+          fi
+          
+          if echo "$TRACKED_FILES" | xargs grep -l "client_email.*iam.gserviceaccount.com" 2>/dev/null; then
+            echo "ERROR: Found service account email in tracked files!"
+            echo "$TRACKED_FILES" | xargs grep -l "client_email.*iam.gserviceaccount.com" 2>/dev/null
+            exit 1
+          fi
+        fi
+        
+        # Check for .env files (should never be committed)
+        if git ls-files | grep "^\.env$"; then
+          echo "ERROR: .env file is tracked by git!"
+          exit 1
+        fi
+        
+        # Check for credentials files
+        if git ls-files | grep -i "credentials.*\.json"; then
+          echo "ERROR: credentials.json file is tracked by git!"
+          exit 1
+        fi
+        
+        echo "✅ No secrets found in tracked files"
+    
+    - name: Verify gitignore is protecting sensitive files
+      run: |
+        echo "Verifying .gitignore..."
+        
+        if ! grep -q "\.env" .gitignore; then
+          echo "ERROR: .env not in .gitignore!"
+          exit 1
+        fi
+        
+        if ! grep -q "credentials.*\.json" .gitignore; then
+          echo "ERROR: credentials not in .gitignore!"
+          exit 1
+        fi
+        
+        echo "✅ gitignore is properly configured"
+

@@ -1,0 +1,10 @@
+# Code Owners
+# All changes require approval from repository owner
+
+# Critical security files - MUST be reviewed
+.gitignore @MiguelCHECK
+.github/ @MiguelCHECK
+
+# All other files
+* @MiguelCHECK
+
