@@ -6,12 +6,12 @@ Ein hands-on Workshop zum Erlernen von Web Scraping mit Scrapy, BigQuery und AI-
 
 ## 🤔 Was ist Web Scraping?
 
-**Web Scraping** ist das automatische Extrahieren von Daten aus Websites. Statt manuell Daten zu kopieren, schreibst du ein Programm, das:
+**Web Scraping** ist das automatische Extrahieren von Daten aus Websites. Dein Programm:
 
-1. **HTTP Requests** sendet (wie ein Browser)
-2. **HTML parst** (den Quellcode analysiert)
-3. **Daten extrahiert** (mit CSS Selektoren bestimmte Elemente findet)
-4. **Daten speichert** (in Datenbank oder Datei)
+1. **Sendet HTTP Requests** (wie ein Browser)
+2. **Parst HTML** (analysiert den Quellcode)
+3. **Extrahiert Daten** (mit CSS Selektoren)
+4. **Speichert Daten** (in Datenbank oder Datei)
 
 ### Warum Scrapy?
 
@@ -19,32 +19,23 @@ Ein hands-on Workshop zum Erlernen von Web Scraping mit Scrapy, BigQuery und AI-
 - 🔄 **Built-in Features**: Pagination, Retry, Caching
 - 🏭 **Production-Ready**: Von Firmen weltweit genutzt
 
-### Heute
+### Deine Mission
 
-Wir scrapen **alle 1000 Bücher** von [books.toscrape.com](https://books.toscrape.com) (einer Übungs-Website) und laden sie in **Google BigQuery**.
+Scrape **alle 1000 Bücher** von [books.toscrape.com](https://books.toscrape.com) und lade sie in **Google BigQuery**!
 
 ---
 
-## 🎯 Deine Aufgabe
-
-Wähle **EINEN** der beiden Modi und baue den Scraper mit Cursor:
+## 🎯 Zwei Modi zur Auswahl
 
 ### Option A: Fast Crawler ⚡ (Empfohlen für Einsteiger)
 
 **Ziel**: 1000 Bücher schnell scrapen
 
-**Vorgehen**:
 - Nur Übersichtsseiten scrapen (keine Detail-Klicks)
-- 50 Seiten Pagination durchlaufen
-- Weniger HTTP Requests = Schneller fertig
-
-**Start-URL**: `https://books.toscrape.com/catalogue/category/books_1/index.html`
-
-**Extrahierte Felder**: 8 von 13
-- ✅ user, title, url, price, available, rating, image_url, scraped_at
-- ❌ category, upc, description, num_available, num_reviews
-
-**Requests**: ~51
+- 50 Seiten durchlaufen
+- **Start-URL**: `https://books.toscrape.com/catalogue/category/books_1/index.html`
+- **Extrahierte Felder**: 8 von 13
+- **Requests**: ~51
 
 ---
 
@@ -52,252 +43,208 @@ Wähle **EINEN** der beiden Modi und baue den Scraper mit Cursor:
 
 **Ziel**: 1000 Bücher mit allen Details
 
-**Vorgehen**:
-- Alle 50 Kategorien durchlaufen
-- Jede Buchliste besuchen
 - Jedes Buch einzeln öffnen (Detail-Seite)
 - Zusätzliche Daten aus Produkt-Tabelle extrahieren
-
-**Start-URL**: `https://books.toscrape.com/`
-
-**Extrahierte Felder**: Alle 13
-- ✅ Alles aus Fast Mode +
-- ✅ category, upc, description, num_available, num_reviews
-
-**Requests**: ~1081
+- **Start-URL**: `https://books.toscrape.com/`
+- **Extrahierte Felder**: Alle 13
+- **Requests**: ~1081
 
 ---
 
-## 📊 BigQuery Schema
+## 📊 Welche Daten sollen extrahiert werden?
 
-Dein Scraper **MUSS** diese exakte Struktur produzieren:
+### Fast Mode: Übersichtsseiten (8 Informationen)
 
-| Feld | Typ | Pflicht? | Beschreibung | Verfügbar in |
-|------|-----|----------|--------------|--------------|
-| **user** | STRING | ✅ REQUIRED | **Dein Name** (z.B. "Max") | Fast + Full |
-| **title** | STRING | ✅ REQUIRED | Buchtitel | Fast + Full |
-| **url** | STRING | ✅ REQUIRED | URL zur Detailseite | Fast + Full |
-| **price** | FLOAT | ✅ REQUIRED | Preis in GBP | Fast + Full |
-| **available** | BOOLEAN | ✅ REQUIRED | `true` = In Stock, `false` = Out of Stock | Fast + Full |
-| **rating** | INTEGER | ✅ REQUIRED | Bewertung (1-5 Sterne) | Fast + Full |
-| **image_url** | STRING | ✅ REQUIRED | URL zum Buchcover | Fast + Full |
-| **scraped_at** | TIMESTAMP | ✅ REQUIRED | Zeitstempel des Scrapings | Fast + Full |
-| category | STRING | ❌ NULLABLE | Buchkategorie (z.B. "Fiction") | Nur Full |
-| upc | STRING | ❌ NULLABLE | Universal Product Code | Nur Full |
-| description | STRING | ❌ NULLABLE | Produktbeschreibung | Nur Full |
-| num_available | INTEGER | ❌ NULLABLE | Anzahl verfügbare Exemplare | Nur Full |
-| num_reviews | INTEGER | ❌ NULLABLE | Anzahl Bewertungen | Nur Full |
+Von jeder Übersichtsseite sollst du folgende Informationen zu jedem Buch extrahieren:
 
-### ⚠️ Wichtig: Das `user` Feld
+1. **Dein Name** – Damit wir wissen, wer die Daten gescraped hat
+2. **Titel des Buches** – Der vollständige Buchtitel
+3. **URL zur Detailseite** – Die vollständige URL zum Buch
+4. **Preis** – Was kostet das Buch? (als Zahl, ohne Währungssymbol)
+5. **Verfügbarkeit** – Ist das Buch vorrätig? (Ja oder Nein)
+6. **Bewertung** – Wie viele Sterne hat das Buch? (1-5)
+7. **Bild-URL** – Die URL zum Buchcover
+8. **Zeitstempel** – Wann wurde dieses Buch gescraped?
 
-**Fülle das `user` Feld mit deinem eigenen Namen!**
+---
 
-```python
-item['user'] = "Dein Name"  # z.B. "Max", "Lisa", "Mohammed"
+### Full Mode: Mit Detailseiten (+5 zusätzliche Informationen)
+
+Zusätzlich zu allen Fast Mode Informationen:
+
+9. **Kategorie** – Zu welcher Kategorie gehört das Buch? (z.B. "Fiction", "Poetry")
+10. **Produktcode (UPC)** – Der eindeutige Universal Product Code
+11. **Beschreibung** – Der Beschreibungstext des Buches
+12. **Anzahl verfügbar** – Wie viele Exemplare sind vorrätig? (als Zahl)
+13. **Anzahl Bewertungen** – Wie viele Bewertungen hat das Buch?
+
+---
+
+### ⚠️ Wichtig: BigQuery Integration
+
+Die extrahierten Daten müssen in die BigQuery-Tabelle passen!
+
+**Deine Aufgaben:**
+- 🔍 Finde heraus, welche Feldnamen BigQuery erwartet
+- 🔍 Finde heraus, welche Datentypen verwendet werden müssen
+- 🔍 Stelle sicher, dass deine Daten das richtige Format haben
+
+**Tipps:**
+```
+"Wie kann ich das Schema einer BigQuery-Tabelle abrufen?"
+"Wie konvertiere ich einen Preis-String in eine Zahl?"
+"Wie erstelle ich einen ISO 8601 Zeitstempel in Python?"
 ```
 
-So können wir später sehen, wer wie viele Bücher gescrapt hat! 🏆
-
 ---
 
-## ☁️ BigQuery Integration
+## ☁️ BigQuery Setup
 
-### Setup (bereits vorbereitet)
+### Konfiguration (.env)
 
-Die BigQuery-Infrastruktur muss eingerichtet werden:
+Die Credentials sind bereits in der `.env` Datei konfiguriert:
 
-- **Projekt**: `your-project-id` (in `.env` konfigurieren)
-- **Dataset**: `your-dataset-id` (in `.env` konfigurieren)
-- **Tabelle**: `your-table-id` (in `.env` konfigurieren)
-- **Credentials**: `credentials.json` (Service Account Key)
+```bash
+GOOGLE_CLOUD_PROJECT_ID=holding-llm-sichtbarkeit
+BIGQUERY_DATASET_ID=keep_learning_scraper
+BIGQUERY_TABLE_ID=scraper_results
+GOOGLE_APPLICATION_CREDENTIALS=bigquery_credentials.json
+```
 
 ### Upload-Methode
 
-Dein Scraper soll Daten in **Batches** hochladen (effizienter als einzeln):
-
-```python
-from google.cloud import bigquery
-
-client = bigquery.Client(project="your-project-id")
-table_id = "your-project-id.your-dataset-id.your-table-id"
-
-# Batch Insert (empfohlen: 100 Items pro Request)
-errors = client.insert_rows_json(table_id, rows)
-if errors:
-    print(f"Fehler: {errors}")
-```
-
-### Datenformat für BigQuery
-
-BigQuery erwartet JSON mit **spezifischen Typen**:
-
-```json
-{
-  "user": "Max",
-  "title": "A Light in the Attic",
-  "url": "https://books.toscrape.com/catalogue/book_123.html",
-  "price": 51.77,
-  "available": true,
-  "rating": 3,
-  "image_url": "https://books.toscrape.com/media/cache/cover.jpg",
-  "scraped_at": "2025-10-06T14:30:00",
-  "category": "Poetry",
-  "upc": "a897fe39b1053632",
-  "description": "It's hard to imagine...",
-  "num_available": 22,
-  "num_reviews": 0
-}
-```
-
-**Wichtige Details**:
-- ✅ `scraped_at`: ISO 8601 String (z.B. `"2025-10-06T14:30:00"`)
-- ✅ `available`: Boolean (`true`/`false`), **nicht** String (`"In stock"`)
-- ✅ `price`: Float (z.B. `51.77`), **nicht** String (`"£51.77"`)
-- ✅ `rating`: Integer (z.B. `3`), **nicht** String (`"Three"`)
+Dein Scraper soll Daten in **Batches** hochladen (empfohlen: 100 Items pro Request).
 
 ---
 
 ## 🤖 Mit Cursor arbeiten
 
-### Beispiel-Prompts für Cursor
+### Dein Workflow:
 
-#### 1. Projekt-Setup
-```
-Erstelle ein Scrapy-Projekt für books.toscrape.com.
+1. **🎯 Verstehe das Ziel**: Was soll der Scraper machen?
+2. **🔍 Analysiere die Website**: Öffne [books.toscrape.com](https://books.toscrape.com) im Browser
+3. **💭 Stelle Cursor Fragen**: Sei spezifisch und klar
+4. **🔄 Iteriere**: Klein anfangen, dann erweitern
+5. **✅ Teste oft**: Nach jeder Änderung testen
 
-Spider-Name: 'books'
-Start-URL: https://books.toscrape.com/catalogue/category/books_1/index.html
+### Beispiel-Fragen an Cursor:
 
-Extrahiere folgende Felder:
-- title, price, rating, image_url, url
 ```
+"Wie kann ich das Schema der BigQuery-Tabelle abrufen?"
 
-#### 2. CSS Selektoren finden
-```
-Analysiere die HTML-Struktur von https://books.toscrape.com 
-und finde die CSS Selektoren für:
-- Container aller Bücher
-- Buchtitel
-- Preis
-- Bewertung (Rating-Klasse)
-- Bild-URL
-```
+"Erstelle ein Scrapy-Projekt für books.toscrape.com"
 
-#### 3. Pagination implementieren
-```
-Erweitere den Spider um Pagination.
-Finde den "next" Button und folge allen Seiten bis zur letzten.
+"Wie finde ich CSS-Selektoren für Buch-Titel auf dieser Website?"
+
+"Wie konvertiere ich '£51.77' zu einem Float-Wert?"
+
+"Wie extrahiere ich eine Zahl aus der CSS-Klasse 'star-rating Three'?"
+
+"Implementiere Pagination, um alle Seiten zu durchlaufen"
+
+"Erstelle eine Scrapy Pipeline, die Daten in Batches zu BigQuery hochlädt"
 ```
 
-#### 4. BigQuery Pipeline
-```
-Erstelle eine Scrapy Pipeline, die Items zu BigQuery hochlädt.
+### 💡 Profi-Tipps:
 
-Projekt: [aus .env laden]
-Dataset: [aus .env laden]
-Tabelle: [aus .env laden]
-Batch-Size: 100
-
-Schema: [siehe BigQuery Schema oben]
-```
-
-#### 5. Detailseiten (Full Mode)
-```
-Erweitere den Spider um Detailseiten.
-Von jeder Übersichtsseite soll auf das Buch geklickt werden.
-Extrahiere aus der Produkttabelle:
-- UPC
-- Description  
-- Anzahl verfügbare Exemplare (aus Text "In stock (22 available)")
-```
-
-### Tipps für effektives Prompting
-
-1. **Sei spezifisch**: Nenne exakte URLs, Feldnamen, Selektoren
-2. **Zeige Beispiele**: Zeige Cursor die Ziel-Website oder HTML-Struktur
-3. **Frage nach Erklärungen**: "Erkläre, wie dieser CSS Selektor funktioniert"
-4. **Iteriere**: Erst Basics, dann erweitern
-5. **Teste häufig**: Nach jeder Änderung kurz testen
+- **Zeige Cursor die Website**: Öffne die HTML-Struktur mit DevTools (F12)
+- **Sei präzise**: Nenne exakte Feldnamen und URLs
+- **Teste Selektoren**: Nutze `scrapy shell "URL"` zum Testen
+- **Frage nach Erklärungen**: "Warum funktioniert dieser Selektor?"
 
 ---
 
-## 📋 HTML-Struktur (Spickzettel)
+## 🎯 Deine Challenges
 
-### Übersichtsseite (Fast Mode)
+### Challenge 0: BigQuery Schema verstehen ⭐
+- [ ] BigQuery-Tabelle erkunden
+- [ ] Feldnamen herausfinden
+- [ ] Datentypen verstehen
+- [ ] Schema dokumentieren
 
-```html
-<article class="product_pod">
-    <div class="image_container">
-        <a href="book-url.html">
-            <img src="cover.jpg" alt="Book Title">
-        </a>
-    </div>
-    <h3>
-        <a href="book-url.html" title="A Light in the Attic">
-            A Light in the...
-        </a>
-    </h3>
-    <div class="product_price">
-        <p class="price_color">£51.77</p>
-        <p class="instock availability">In stock</p>
-    </div>
-    <p class="star-rating Three"></p>
-</article>
-```
-
-**Wichtige Selektoren**:
-- Container: `article.product_pod`
-- Titel: `h3 a::attr(title)`
-- Preis: `p.price_color::text`
-- Rating: `p.star-rating::attr(class)`
-- Bild: `img::attr(src)`
-- Verfügbarkeit: `p.instock.availability::text`
-
-### Detailseite (Full Mode)
-
-```html
-<table class="table table-striped">
-    <tr>
-        <th>UPC</th>
-        <td>a897fe39b1053632</td>
-    </tr>
-    <tr>
-        <th>Availability</th>
-        <td>In stock (22 available)</td>
-    </tr>
-    <tr>
-        <th>Number of reviews</th>
-        <td>0</td>
-    </tr>
-</table>
-
-<div id="product_description">
-    <p>It's hard to imagine a world without A Light in the Attic...</p>
-</div>
-```
-
-**Wichtige Selektoren**:
-- UPC: `table tr:contains("UPC") td::text`
-- Verfügbarkeit: `table tr:contains("Availability") td::text`
-- Bewertungen: `table tr:contains("Number of reviews") td::text`
-- Beschreibung: `#product_description + p::text`
+**Tipp**: Frage Cursor, wie man das Schema einer BigQuery-Tabelle abruft!
 
 ---
 
-## ✅ Validierung & Testing
+### Challenge 1: Projekt Setup ⭐
+- [ ] Virtual Environment erstellen
+- [ ] Scrapy installieren
+- [ ] Scrapy-Projekt initialisieren
+- [ ] Ersten Spider erstellen
 
-### Checkliste: Ist dein Scraper fertig?
+**Tipp**: Frage Cursor nach dem Setup-Workflow für ein Scrapy-Projekt!
 
+---
+
+### Challenge 2: Erste Daten extrahieren ⭐⭐
 - [ ] Spider läuft ohne Fehler
-- [ ] Mindestens 100 Bücher werden gescrapt
-- [ ] Alle **REQUIRED** Felder sind befüllt
-- [ ] `user` Feld enthält **deinen Namen**
-- [ ] BigQuery Upload funktioniert
+- [ ] Mindestens 1 Buch wird gescrapt
+- [ ] Titel und Preis werden extrahiert
+
+**Tipp**: Starte mit `scrapy crawl books -o test.json` zum Testen!
+
+---
+
+### Challenge 3: Alle Felder (Fast Mode) ⭐⭐
+- [ ] Alle 8 Informationen werden extrahiert (siehe oben)
+- [ ] Datentypen entsprechen dem BigQuery-Schema
+- [ ] Feldnamen entsprechen dem BigQuery-Schema
+- [ ] Dein Name ist als user gespeichert
+
+**Tipp**: Nutze Browser DevTools, um HTML-Struktur zu analysieren!
+
+---
+
+### Challenge 4: Pagination ⭐⭐⭐
+- [ ] Spider durchläuft alle 50 Seiten
+- [ ] ~1000 Bücher werden gescrapt
+- [ ] Keine Duplikate
+
+**Tipp**: Suche nach dem "next" Button in der Pagination!
+
+---
+
+### Challenge 5: BigQuery Integration ⭐⭐⭐
+- [ ] Pipeline erstellt
+- [ ] Daten werden in Batches hochgeladen
 - [ ] Daten erscheinen in BigQuery-Tabelle
 
-### Test-Query für BigQuery
+**Tipp**: Frage Cursor nach der `google-cloud-bigquery` Library!
 
-Prüfe, ob deine Daten angekommen sind:
+---
+
+### Challenge 6: Full Mode (Optional) ⭐⭐⭐⭐
+- [ ] Spider öffnet Detailseiten für jedes Buch
+- [ ] Zusätzliche 5 Informationen werden extrahiert
+- [ ] Alle 13 Felder entsprechen dem BigQuery-Schema
+
+**Tipp**: Nutze `scrapy.Request()` mit `callback` für Detailseiten!
+
+---
+
+## ✅ Testing & Validierung
+
+### Lokaler Test (ohne BigQuery)
+
+```bash
+# Virtual Environment aktivieren
+source venv/bin/activate
+
+# Spider ausführen (nur erste Seite zum Testen)
+scrapy crawl books -o test_output.json -s CLOSESPIDER_PAGECOUNT=1
+
+# Ergebnis prüfen
+cat test_output.json | head -n 30
+```
+
+### Test mit BigQuery
+
+```bash
+# Vollständiger Crawl mit BigQuery Upload
+scrapy crawl books
+```
+
+### Validierung in BigQuery
 
 ```sql
 -- Wie viele Bücher hast du heute gescrapt?
@@ -306,106 +253,52 @@ SELECT
     COUNT(*) as book_count,
     MIN(scraped_at) as first_scrape,
     MAX(scraped_at) as last_scrape
-FROM `your-project-id.your-dataset-id.your-table-id`
+FROM `holding-llm-sichtbarkeit.keep_learning_scraper.scraper_results`
 WHERE DATE(scraped_at) = CURRENT_DATE()
 GROUP BY user
 ORDER BY book_count DESC;
-```
-
-### Lokaler Test (ohne BigQuery)
-
-Teste deinen Spider zuerst mit JSON-Output:
-
-```bash
-# Scrapy ausführen
-scrapy crawl books -o test_output.json
-
-# Prüfe die Datei
-cat test_output.json | jq '.[0]'  # Erstes Buch anzeigen
 ```
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Problem: "Scraped 0 books"
+### "Scraped 0 books"
+→ CSS Selektoren sind falsch. Teste mit `scrapy shell "https://books.toscrape.com"`
 
-**Ursache**: CSS Selektor ist falsch
+### "BigQuery Access Denied"
+→ Prüfe, ob `bigquery_credentials.json` existiert
 
-**Lösung**: Teste mit Scrapy Shell
-```bash
-scrapy shell "https://books.toscrape.com"
->>> response.css('article.product_pod').getall()
->>> response.css('h3 a::attr(title)').get()
-```
+### "TypeError: not JSON serializable"
+→ Prüfe Datentypen (Float, Boolean, ISO-String für Timestamp)
 
----
-
-### Problem: "BigQuery Access Denied"
-
-**Ursache**: Credentials nicht gefunden
-
-**Lösung**: Prüfe Umgebungsvariable
-```bash
-echo $GOOGLE_APPLICATION_CREDENTIALS
-# Sollte zeigen: /path/to/credentials.json
-```
-
-Oder setze in `.env`:
-```bash
-GOOGLE_APPLICATION_CREDENTIALS=credentials.json
-```
-
----
-
-### Problem: "TypeError: Object of type datetime is not JSON serializable"
-
-**Ursache**: BigQuery will ISO String, nicht datetime Object
-
-**Lösung**: Konvertiere zu String
-```python
-from datetime import datetime
-
-item['scraped_at'] = datetime.now().isoformat()
-# Ergebnis: "2025-10-06T14:30:00"
-```
-
----
-
-### Problem: Duplikate in BigQuery
-
-**Ursache**: Mehrere Runs ohne Deduplication
-
-**Lösung**: Nutze URL als eindeutigen Key
-```python
-# In Pipeline: Prüfe, ob URL schon existiert
-seen_urls = set()
-
-if item['url'] not in seen_urls:
-    seen_urls.add(item['url'])
-    # Upload to BigQuery
-```
+### Spider zu langsam
+→ Erhöhe `CONCURRENT_REQUESTS` in `settings.py`
 
 ---
 
 ## 📚 Nützliche Ressourcen
 
-- **Scrapy Docs**: https://docs.scrapy.org
-- **CSS Selektoren**: https://www.w3schools.com/cssref/css_selectors.asp
+- **Scrapy Dokumentation**: https://docs.scrapy.org
+- **CSS Selektoren Tutorial**: https://www.w3schools.com/cssref/css_selectors.asp
 - **BigQuery Python Client**: https://cloud.google.com/python/docs/reference/bigquery/latest
 - **Übungs-Website**: https://books.toscrape.com
 
 ---
 
+## 🏆 Leaderboard
+
+Wer scraped die meisten Bücher? Schau dir die BigQuery-Tabelle an!
+
+---
+
 ## 🆘 Hilfe & Support
 
-**Stuck?** Frage:
-1. Cursor (zeige ihm die Fehlermeldung)
-2. Workshop-Leiter
-3. Kollegen (Pair Programming!)
+**Stuck?** 
+1. 🤖 Frage Cursor (zeige ihm die Fehlermeldung)
+2. 👨‍🏫 Workshop-Leiter fragen
+3. 👥 Pair Programming mit Kollegen
 
 ---
 
 **Viel Erfolg! 🚀**
-
-
