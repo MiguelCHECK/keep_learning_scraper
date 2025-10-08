@@ -4,6 +4,24 @@ Ein hands-on Workshop zum Erlernen von Web Scraping mit Scrapy, BigQuery und AI-
 
 ---
 
+## ⚠️ Wichtige Voraussetzung: Python Version
+
+**Dieses Projekt benötigt Python 3.11 oder 3.12**  
+**Python 3.13+ wird NICHT unterstützt!**
+
+- ✅ **Empfohlen**: Python 3.12.2
+- ❌ **Nicht unterstützt**: Python 3.13+
+- **Grund**: Scrapy 2.11.0 benötigt das `cgi` Modul, welches in Python 3.13 entfernt wurde
+
+### Python-Version überprüfen:
+
+```bash
+python3 --version  # Sollte 3.12.x oder 3.11.x anzeigen
+python3.12 --version  # Explizit Python 3.12 verwenden
+```
+
+---
+
 ## 🤔 Was ist Web Scraping?
 
 **Web Scraping** ist das automatische Extrahieren von Daten aus Websites. Dein Programm:
@@ -94,6 +112,52 @@ Die extrahierten Daten müssen in die BigQuery-Tabelle passen!
 "Wie kann ich das Schema einer BigQuery-Tabelle abrufen?"
 "Wie konvertiere ich einen Preis-String in eine Zahl?"
 "Wie erstelle ich einen ISO 8601 Zeitstempel in Python?"
+```
+
+---
+
+## 🚀 Installation & Setup
+
+### 1. Repository klonen
+
+```bash
+git clone https://github.com/MiguelCHECK/keep_learning_scraper_solution.git
+cd keep_learning_scraper_solution
+```
+
+### 2. Python Version prüfen
+
+```bash
+# Prüfe ob Python 3.12 installiert ist
+python3.12 --version
+
+# Falls nicht installiert:
+# macOS: brew install python@3.12
+# Windows: https://www.python.org/downloads/
+```
+
+### 3. Virtual Environment erstellen
+
+```bash
+# ⚠️ WICHTIG: Explizit Python 3.12 verwenden!
+python3.12 -m venv venv
+
+# Virtual Environment aktivieren
+source venv/bin/activate  # macOS/Linux
+# oder: venv\Scripts\activate  # Windows
+```
+
+### 4. Dependencies installieren
+
+```bash
+pip install -r requirements.txt
+```
+
+### 5. Prüfen ob alles funktioniert
+
+```bash
+python --version  # Sollte 3.12.x anzeigen
+python -c "import scrapy; print('✅ Setup erfolgreich!')"
 ```
 
 ---
@@ -262,6 +326,34 @@ ORDER BY book_count DESC;
 ---
 
 ## 🐛 Troubleshooting
+
+### ⚠️ "ModuleNotFoundError: No module named 'cgi'"
+
+**Ursache**: Sie verwenden Python 3.13 oder höher, aber Scrapy benötigt das `cgi` Modul.
+
+**Lösung**:
+```bash
+# 1. Altes venv entfernen
+rm -rf venv
+
+# 2. Python 3.12 verwenden
+python3.12 -m venv venv
+
+# 3. venv aktivieren
+source venv/bin/activate  # macOS/Linux
+# oder: venv\Scripts\activate  # Windows
+
+# 4. Dependencies neu installieren
+pip install -r requirements.txt
+```
+
+**Prüfen ob es funktioniert**:
+```bash
+python --version  # Sollte 3.12.x anzeigen (NICHT 3.13)
+python -c "import scrapy; print('Scrapy funktioniert ✅')"
+```
+
+---
 
 ### "Scraped 0 books"
 → CSS Selektoren sind falsch. Teste mit `scrapy shell "https://books.toscrape.com"`

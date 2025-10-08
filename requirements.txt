@@ -1,7 +1,35 @@
+# ============================================================================
+# Keep Learning Scraper - Python Dependencies
+# ============================================================================
+#
+# ⚠️  WICHTIG - PYTHON VERSION REQUIREMENTS:
+#
+# Dieses Projekt benötigt Python 3.11 oder 3.12
+# Python 3.13+ wird NICHT unterstützt!
+#
+# Grund: Scrapy 2.11.0 mit Twisted 22.10.0 benötigt das 'cgi' Modul,
+#        welches in Python 3.13 entfernt wurde.
+#
+# Installation des venv:
+#   python3.12 -m venv venv
+#   source venv/bin/activate  # macOS/Linux
+#   pip install -r requirements.txt
+#
+# ============================================================================
+
+# Web Scraping Framework
 scrapy>=2.11.0
+
+# Data Validation & Models
 pydantic>=2.5.0
+
+# Google Cloud / BigQuery
 google-cloud-bigquery>=3.14.0
+
+# HTTP & Utilities
 python-dotenv>=1.0.0
+
+# Logging
 loguru>=0.7.2
 
 

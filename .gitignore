@@ -40,7 +40,10 @@ credentials.json
 
 # IDEs
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
 
 # OS
 .DS_Store
